@@ -1,1 +1,4 @@
-
+# Files to ignore
+*.mat
+*.zip
+*.png
