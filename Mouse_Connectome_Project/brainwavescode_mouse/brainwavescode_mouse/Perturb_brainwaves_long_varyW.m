@@ -6,6 +6,20 @@ function mysavename = Perturb_brainwaves_long_varyW(normW,coupling,delays,label,
 % will occur for. We will assume that as default t_length = 1.0
 % strength_perturb refers to the strength of the perturbation (mV ??? )
 
+% perturb = true, [false] -> Perturb the system?
+% t_perturb = ictime*segments/2   ms (half way point)
+% t_length = 1 ms  -> length of perturbation
+% strength_perturb = 0.05 
+% node = randperm(length(connectivity),1) 
+
+
+
+
+
+
+
+
+
 % global variables (shared with dde solver)
 global V1 V2 V3 V4 V5 V6 V7 gCa gK gL VK VL VCa I b ani aei aie aee phi V8 V9 gNa VNa ane nse rnmda N CM vs c k_in numddevars myrand
 

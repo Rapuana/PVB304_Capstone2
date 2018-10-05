@@ -1,0 +1,175 @@
+function mysavename = sam_perturbations_BW(normW, coupling, delays, ...
+    label, outdir, perturb, t_perturb, t_length, strength_perturb, node)
+% A function adapted from James Roberts and Anton Lord to apply
+% perturbations to the mouse connectome. This function will be written with
+% the mouse connectome specifically in mind and thus may be inefficient on
+% larger connectomes. 
+%
+% Author: Samuel Dudley ~ Queensland Institute of Medical Research (S)
+%                         Queensland University of Technology (S)
+%
+% Adapted from: James Roberts,
+%               Anton Lord
+%
+% sam_perturbations_BW
+% normW: Connectivity Matrix
+% coupling: normalised coupling strength from 0 to 1
+% delays: time of delay between solves, (in ms)
+% label: string -> Code label. example: 'mouse'
+% outdir: string -> Directory to save files
+% perturb: true or false value 
+% t_perturb: time at which perturbation begins
+% t_length: time for which perturbation occurs
+% strength_perturb: Strength of the perturbation
+% node: node in which we perturb
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% NOTES $ % NOTES $ % NOTES $ % NOTES $ % NOTES $ % NOTES $ % NOTES $ %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% DDE23 is a Delayed Differential Equation solver using Runge Kutta's 2nd
+% and 3rd order methods. Higher order methods are very computationally
+% heavy and not required.
+
+%%% sol = DDE23(ddefun,lags,history,tspan,options)
+% ddefun DDE Function which has the form
+% dydt = ddefun(t,y,Z)
+% whereby t is the current time, 
+% y is a column vector approximating y(t) and Z(:,j) approximates
+% y(t-tau_j) for delay tau_j = lags(j). The output is a column vector
+% corresponding to f(t,y(t), y(t-tau_1),...,y(t-tau_k)).
+% lags DELAYS which has length(lags) = k and is a vector of constant
+% positive delays. 
+% tspan refers to the interval of integration from t_0=tspan(1) to
+% t_f=tspan(end) such that t_i < t_i+1
+% sol SOLUTION 
+% the structure of the solution given by dde23. 
+% sol.x is the Mesh selected by dde23 to solve over
+% sol.y is the approximation to y(x) at points in sol.x
+% sol.yp is the approximation to y'(x) at points in sol.x
+% sol.solver = dde23 (the solver name)
+
+
+% Set global variables which we share with DDE solver
+
+global V1 V2 V3 V4 V5 V6 V7 gCa gK gL VK VL VCa I b ani aei aie aee phi ...
+    V8 V9 gNa VNa ane nse rnmda N CM vs c k_in numddevars myrand
+
+
+%%% Set up values
+% Set the timings for the solution. 
+ictime = 50;        % initial conditions for the integration
+segments = 50;      % the number of segments we split the integration into
+connectivity = normW;
+
+
+% Logic Tests
+
+if t_perturb >= ictime*segments
+    error('t_perturb must be less than ictime*segments')
+end
+
+if node > length(normW)
+    error('You are trying to perturb a node that does not exist')
+end
+
+% Set the output timestep (in ms)
+outdt = 1;  % Default = 1
+
+% Set a name for the output of the filename base
+basename = 'string_here_about_stuff';
+
+
+% Set directory 
+mkdir(outdir);
+
+
+
+% Set up Sparse Matrix
+
+% Due to the size of the mouse connectome this may not be worth it for the
+% mouse connectome from a computational stand point. Regardless we shall
+% leave it.
+% Initialise sparse matrix 
+CM = sparse(connectivity);
+
+% Take size of connectivity matrix
+[N,~] = size(connectivity);
+
+% Sum all the columns of the connectivity matrix and transpose into col vec
+k_in = sum(CM)';
+
+% Set up model Parameters
+
+V1 = -0.01; V2 = 0.15; V3 = 0   ; V4 = 0.3; V5 = 0; 
+V6 =  0.65; V7 = 0   ; V8 = 0.15; V9 = 0.3;
+gCa = 1; gK = 2.0; gL = 0.5; gNa = 6.7;
+VK = -0.7; VL = -0.5; I = 0.3; b = 0.1; phi = 0.7; VNa = 0.53; VCa = 1;
+ani = 0.4; vs = 1; aei = 2; aie = 2; aee = 0.36; ane = 1; rnmda = 0.25;
+
+
+% Noise, coupling, modulation
+nse = 0;
+
+
+%%% Now we are onto the actual solving
+
+rstate = rng; 
+c = coupling;           % Coupling GP
+scanlag = delays;       % Delays
+
+starttime = 0;          % Time we start solve at
+myrand = rand(N,1);     % random seed used to generate different IC 
+                        % histories  which is parsed to $nrmlmass_hist
+myddehandle = @nrlmass_dde_3; % DDE file handle
+
+
+if scanlag == 0
+    mylags = []; 
+else
+    mylags = scanlag;
+end
+
+% Set handle for function that looks after dde history
+myhisthandle = @nrlmass_hist; 
+myoptions = ddeset('RelTol', 1e-6, 'AbsTol', 1e-6); 
+
+fprintf('Solving DDE for lag = %g, coupling = %g ... ', scanlag, c)
+
+% Assume random initial conditions
+sol = ddesolver(myddehandle, mylags, myhisthandle, ...
+    [starttime ictime], myoptions);
+
+starttime = ictime; endtime = starttime + ictime; 
+
+% Set the save name for the mat-files and figures
+mysavename = sprintf('string here')
+
+%%% This is where we add the perturbations
+
+if perturb
+    
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
