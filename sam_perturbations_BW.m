@@ -24,7 +24,7 @@ function mysavename = sam_perturbations_BW(normW, coupling, delays, ...
 % node: node in which we perturb
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% NOTES $ % NOTES $ % NOTES $ % NOTES $ % NOTES $ % NOTES $ % NOTES $ %%%
+%%%% NOTES % % NOTES % % NOTES % % NOTES % % NOTES % % NOTES % % NOTES %%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % DDE23 is a Delayed Differential Equation solver using Runge Kutta's 2nd
@@ -49,17 +49,22 @@ function mysavename = sam_perturbations_BW(normW, coupling, delays, ...
 % sol.yp is the approximation to y'(x) at points in sol.x
 % sol.solver = dde23 (the solver name)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% SOLVER % % SOLVER % % SOLVER % % SOLVER % % SOLVER % % SOLVER %%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Set global variables which we share with DDE solver
 
 global V1 V2 V3 V4 V5 V6 V7 gCa gK gL VK VL VCa I b ani aei aie aee phi ...
     V8 V9 gNa VNa ane nse rnmda N CM vs c k_in numddevars myrand
 
+numddevars = 3;
+
 
 %%% Set up values
 % Set the timings for the solution. 
 ictime = 50;        % initial conditions for the integration
-segments = 50;      % the number of segments we split the integration into
+segments = 1;      % the number of segments we split the integration into
 connectivity = normW;
 
 
@@ -109,7 +114,11 @@ ani = 0.4; vs = 1; aei = 2; aie = 2; aee = 0.36; ane = 1; rnmda = 0.25;
 
 
 % Noise, coupling, modulation
+% NOTE %
+% Our model does not incorporate noise but regardless we shall leave this
+% global variable here for future implementations.
 nse = 0;
+
 
 
 %%% Now we are onto the actual solving
@@ -131,6 +140,7 @@ else
 end
 
 % Set handle for function that looks after dde history
+% History from before t_0
 myhisthandle = @nrlmass_hist; 
 myoptions = ddeset('RelTol', 1e-6, 'AbsTol', 1e-6); 
 
@@ -147,9 +157,63 @@ mysavename = sprintf('string here')
 
 %%% This is where we add the perturbations
 
+% Arguments used
+% t_length
+% t_perturb
+% strength_perturb
+
+
+
+
 if perturb
     % Add code for perturbation here. 
+    % So we have our node being 'node'
 end
+
+
+for segment = 1:segments
+    fprintf('d=%g, c=%g,  segment %d of %d', scanlag, c, segment, segments)
+    tic % Time iterations
+    sol = ddesolver(myddehandle, mylags, sol, ...
+                    [starttime endtime], myoptions);
+    starttime = endtime; endtime = starttime + ictime;
+    toc % Iteration timing
+    
+    % We could save checkpoints here but due to the fact that we will have
+    % lowish segments (<50) then we shall leave it. 
+    
+    % Save values
+    time = sol.x(1):outdt:sol.x(end);
+    soln = deval(sol, time, 1:3:N*3-2);
+    
+    solrestart = sol; 
+    keep = sol.x > (sol.x(end) - ictime);
+    solrestart.x = solrestart.x(keep);
+    solrestart.y = solrestart.y(:,keep);
+    solrestart.yp = solrestart.yp(:,keep);
+    
+    % SAVING 
+    % Save stuff here.
+    
+end
+    
+
+
+
+
+
+
+
+% loop
+% nrlmass_dde_3
+% X nrlmass_hist
+
+
+
+
+
+
+end % END FUNCTION
 
 
 

@@ -1,4 +1,7 @@
-function out = nrlmass_dde(t,y,ylag)
+function out = nrlmass_dde_3(t,y,ylag)
+% This is the Delayed Differential Equation
+
+
 
 global V1 V2 V3 V4 V5 V6 V7 gCa gK gL VK VL VCa I b ani aei aie aee phi V8 V9 gNa VNa ane nse rnmda N CM vs c k_in
 
