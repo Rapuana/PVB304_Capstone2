@@ -1,5 +1,5 @@
 function mysavename = sam_perturbations_BW(normW, coupling, delays, ...
-    label, outdir, perturb, t_perturb, t_length, strength_perturb, node)
+    label, outdir, t_perturb, t_length, strength_perturb, node)
 % A function adapted from James Roberts and Anton Lord to apply
 % perturbations to the mouse connectome. This function will be written with
 % the mouse connectome specifically in mind and thus may be inefficient on
@@ -56,7 +56,9 @@ function mysavename = sam_perturbations_BW(normW, coupling, delays, ...
 % Set global variables which we share with DDE solver
 
 global V1 V2 V3 V4 V5 V6 V7 gCa gK gL VK VL VCa I b ani aei aie aee phi ...
-    V8 V9 gNa VNa ane nse rnmda N CM vs c k_in numddevars myrand
+    V8 V9 gNa VNa ane nse ...
+    rnmda N CM vs c k_in numddevars myrand Perturbed
+
 
 numddevars = 3;
 
@@ -69,20 +71,25 @@ connectivity = normW;
 
 
 % Logic Tests
-
-if t_perturb >= ictime*segments
-    error('t_perturb must be less than ictime*segments')
+if nargin > 5 % We check to see if we are running perturbations.
+    if t_perturb >= ictime*segments
+        error('Perturbing at time outside range, t_perturb must be less than ictime*segments')
+    end
+    
+    if node > length(normW)
+        error('You are trying to perturb a node that does not exist')
+    end
+    perturb = true;
+else
+    perturb = false;
 end
 
-if node > length(normW)
-    error('You are trying to perturb a node that does not exist')
-end
 
 % Set the output timestep (in ms)
 outdt = 1;  % Default = 1
 
 % Set a name for the output of the filename base
-basename = 'string_here_about_stuff';
+basename = ['Run_ictime' num2str(ictime) '_seg' num2str(segments)];
 
 
 % Set directory 
@@ -99,7 +106,7 @@ mkdir(outdir);
 CM = sparse(connectivity);
 
 % Take size of connectivity matrix
-[N,~] = size(connectivity);
+[N,~] = size(connectivity); % Should be square.
 
 % Sum all the columns of the connectivity matrix and transpose into col vec
 k_in = sum(CM)';
@@ -121,7 +128,10 @@ nse = 0;
 
 
 
+
 %%% Now we are onto the actual solving
+
+% We have removed loops for 'trials', 'coupling' and 'delay'. 
 
 rstate = rng; 
 c = coupling;           % Coupling GP
@@ -131,6 +141,9 @@ starttime = 0;          % Time we start solve at
 myrand = rand(N,1);     % random seed used to generate different IC 
                         % histories  which is parsed to $nrmlmass_hist
 myddehandle = @nrlmass_dde_3; % DDE file handle
+
+% Set the solver to dde23.
+ddesolver=@(varargin) dde23(varargin{:});
 
 
 if scanlag == 0
@@ -150,10 +163,12 @@ fprintf('Solving DDE for lag = %g, coupling = %g ... ', scanlag, c)
 sol = ddesolver(myddehandle, mylags, myhisthandle, ...
     [starttime ictime], myoptions);
 
+% Run over the initial conditions. 
 starttime = ictime; endtime = starttime + ictime; 
 
 % Set the save name for the mat-files and figures
-mysavename = sprintf('string here')
+mysavename = sprintf('%s_d%.3fms_%s_coupling%.3f.mat', basename, ...
+    scanlag, label, c);
 
 %%% This is where we add the perturbations
 
@@ -161,13 +176,18 @@ mysavename = sprintf('string here')
 % t_length
 % t_perturb
 % strength_perturb
+% node
 
 
-
-
-if perturb
+if perturb % This will run if perturb is active
     % Add code for perturbation here. 
     % So we have our node being 'node'
+    
+    % Now we need to check
+    sol = ddesolver(myddehangle, mylags, sol, [starttime endtime], myoptions);
+    
+    sol.y(  node  , end) = sol.y(  node  , end) + strength_perturb;
+    
 end
 
 
@@ -194,6 +214,7 @@ for segment = 1:segments
     
     % SAVING 
     % Save stuff here.
+    
     
 end
     

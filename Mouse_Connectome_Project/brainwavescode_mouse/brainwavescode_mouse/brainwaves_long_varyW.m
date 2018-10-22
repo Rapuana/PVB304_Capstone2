@@ -109,7 +109,7 @@ for trials=1:ntrials, trials                %Loop through a number of trials
         for auxs = 1:length(delays)     %The range of lags to be scanned.
             rstate=rng;
             
-            c=coupling(auxc);     % ********* COUPLING ***********
+            c=coupling(auxc);      % ********* COUPLING ***********
             scanlag=delays(auxs);  % ********* DELAYS ***********
             starttime = 0;
             myrand = rand(N,1); %random seed used to generate different IC/histories (variable is passed to @nrmlmass_hist)
@@ -177,7 +177,8 @@ for trials=1:ntrials, trials                %Loop through a number of trials
                 starttime=endtime; endtime=starttime+ictime;
                 toc
                 
-                % save checkpoint
+                % save checkpoint code (not needed)
+                for hide = 1:1
                 if ~mod(segment,50)
                     checkpoint=checkpoint+1;
                     fprintf('saving checkpoint %d\n',checkpoint)
@@ -200,6 +201,7 @@ for trials=1:ntrials, trials                %Loop through a number of trials
 
                     % truncate because otherwise dde23 is too slow
                     sol=solrestart;
+                end
                 end
                 
             end      %segments
