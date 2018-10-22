@@ -19,7 +19,7 @@ t_perturb/ictime
 
 % Segment in which the perturbation occurs
 perturb_seg = floor(t_perturb/ictime);
-;
+
 for segment = 1:segments
     if segment == perturb_seg
         % This endtime is for when there is no perturbation

@@ -1,15 +1,16 @@
 function mysavename = sam_perturbations_BW(normW, coupling, delays, ...
-    label, outdir, t_perturb, t_length, strength_perturb, node)
+    label, outdir, t_perturb, strength_perturb, node)
 % A function adapted from James Roberts and Anton Lord to apply
 % perturbations to the mouse connectome. This function will be written with
 % the mouse connectome specifically in mind and thus may be inefficient on
 % larger connectomes. 
 %
-% Author: Samuel Dudley ~ Queensland Institute of Medical Research (S)
-%                         Queensland University of Technology (S)
+% Author: Samuel Dudley ~ 
+% Queensland Institute of Medical Research (Visiting Student)
+% Queensland University of Technology (BSc. & BMath.)
 %
 % Adapted from: James Roberts,
-%               Anton Lord
+%               Anton Lord.
 %
 % sam_perturbations_BW
 % normW: Connectivity Matrix
@@ -19,7 +20,7 @@ function mysavename = sam_perturbations_BW(normW, coupling, delays, ...
 % outdir: string -> Directory to save files
 % perturb: true or false value 
 % t_perturb: time at which perturbation begins
-% t_length: time for which perturbation occurs
+% t_length: time for which perturbation occurs REVISION -- REMOVED
 % strength_perturb: Strength of the perturbation
 % node: node in which we perturb
 
@@ -57,8 +58,7 @@ function mysavename = sam_perturbations_BW(normW, coupling, delays, ...
 
 global V1 V2 V3 V4 V5 V6 V7 gCa gK gL VK VL VCa I b ani aei aie aee phi ...
     V8 V9 gNa VNa ane nse ...
-    rnmda N CM vs c k_in numddevars myrand Perturbed
-
+    rnmda N CM vs c k_in numddevars myrand
 
 numddevars = 3;
 
@@ -72,15 +72,21 @@ connectivity = normW;
 
 % Logic Tests
 if nargin > 5 % We check to see if we are running perturbations.
-    if t_perturb >= ictime*segments
-        error('Perturbing at time outside range, t_perturb must be less than ictime*segments')
+    % If so check the perturbation code
+    if t_perturb >= ictime*segments 
+        error(['Perturbing at time outside range, ' ...
+               't_perturb must be less than ictime*segments'])
+    elseif t_perturb < ictime
+        error(['Perturbing at a time too early, ' ...
+               't_perturb must be greater than ictime'])
     end
-    
     if node > length(normW)
         error('You are trying to perturb a node that does not exist')
     end
+    % Set the perturb logical
     perturb = true;
 else
+    % Set the perturb logical
     perturb = false;
 end
 
@@ -133,13 +139,13 @@ nse = 0;
 
 % We have removed loops for 'trials', 'coupling' and 'delay'. 
 
-rstate = rng; 
+rstate = rng;           % Do we need this?
 c = coupling;           % Coupling GP
 scanlag = delays;       % Delays
 
 starttime = 0;          % Time we start solve at
 myrand = rand(N,1);     % random seed used to generate different IC 
-                        % histories  which is parsed to $nrmlmass_hist
+                        % histories  which is parsed to $nrlmass_hist
 myddehandle = @nrlmass_dde_3; % DDE file handle
 
 % Set the solver to dde23.
@@ -161,100 +167,97 @@ fprintf('Solving DDE for lag = %g, coupling = %g ... ', scanlag, c)
 
 % Assume random initial conditions
 sol = ddesolver(myddehandle, mylags, myhisthandle, ...
-    [starttime ictime], myoptions);
+                [starttime ictime], myoptions);
 
 % Run over the initial conditions. 
 starttime = ictime; endtime = starttime + ictime; 
 
 % Set the save name for the mat-files and figures
-mysavename = sprintf('%s_d%.3fms_%s_coupling%.3f.mat', basename, ...
-    scanlag, label, c);
+mysavename = ...
+    sprintf('%s_d%.3fms_%s_coupling%.3f_Pert%g_Pert_time%g.mat', ....
+                basename, scanlag, label, c, perturb, t_perturb);
 
 %%% This is where we add the perturbations
 
 % Arguments used
-% t_length
+% t_length <- DELETED
 % t_perturb
 % strength_perturb
 % node
 
 
-if perturb % This will run if perturb is active
-    % Add code for perturbation here. 
-    % So we have our node being 'node'
-    
-    % Now we need to check
-    sol = ddesolver(myddehangle, mylags, sol, [starttime endtime], myoptions);
-    
-    sol.y(  node  , end) = sol.y(  node  , end) + strength_perturb;
-    
-end
+% Perturb arg is set based on nargin
 
+% We need to determine which segment we run the perturbation in.
+if perturb % This will run if perturb is active
+    % Determine segment in which perturb will occur. 
+    perturb_seg = floor(t_perturb/ictime);
+end
 
 for segment = 1:segments
-    fprintf('d=%g, c=%g,  segment %d of %d', scanlag, c, segment, segments)
-    tic % Time iterations
-    sol = ddesolver(myddehandle, mylags, sol, ...
-                    [starttime endtime], myoptions);
-    starttime = endtime; endtime = starttime + ictime;
-    toc % Iteration timing
-    
-    % We could save checkpoints here but due to the fact that we will have
-    % lowish segments (<50) then we shall leave it. 
-    
-    % Save values
-    time = sol.x(1):outdt:sol.x(end);
-    soln = deval(sol, time, 1:3:N*3-2);
-    
-    solrestart = sol; 
-    keep = sol.x > (sol.x(end) - ictime);
-    solrestart.x = solrestart.x(keep);
-    solrestart.y = solrestart.y(:,keep);
-    solrestart.yp = solrestart.yp(:,keep);
-    
-    % SAVING 
-    % Save stuff here.
-    
-    
+    if segment == perturb_seg % Check to see if we add perturbation in this
+        % loop. If so we change the endtime
+        % STARTTIME IS AS USUAL
+        endtime = t_perturb; % Set endtime to the time in which perturb 
+        % occurs. 
+        
+        % Let's have a sanity check on our coding here. 
+        if endtime - starttime > ictime
+            warning('PERTURBATION CODE WARNING:')
+            warning('The selected endtime is larger than expected...')
+        end
+        
+        fprintf('PERTURBATION SEGMENT: d=%g, c=%g, segment %d of %d', ...
+            scanlag, c', segment, segments)
+        fprintf('Perturbing node %g, at time %g with a strength of %g', ...
+            node, t_perturb, strength_perturb)
+        fprintf('With shorter segment, ictime = %g,\n', ...
+            diff([starttime endtime]))
+        tic % Time the iteration
+        % Run the DDE solver as usual, stopping at perturbation point.
+        sol = ddesolver(myddehandle, mylags, sol, ...
+                        [starttime endtime], myoptions);
+                    
+        % Now we add the perturbation to the end of the desired node.
+        sol.y(node, end) = sol.y(node, end) + strength_perturb;
+        
+        % Now we set the start time for the next segment.
+        starttime = endtime; % Set this differently 
+        toc% Iteration timing
+        
+    else
+        if segment == perturb_seg+1
+            fprintf('Longer segment, ictime = %g', ...
+                diff([starttime endtime]))
+        end
+        fprintf('d=%g, c=%g,  segment %d of %d\n', ...
+            scanlag, c, segment, segments)
+        tic % Time iterations
+        sol = ddesolver(myddehandle, mylags, sol, ...
+                        [starttime endtime], myoptions);
+        starttime = endtime; endtime = starttime + ictime;
+        toc % Iteration timing
+    end
 end
-    
+
+% Save values
+time = sol.x(1):outdt:sol.x(end);
+soln = deval(sol, time, 1:3:N*3-2);
+
+solrestart = sol;
+keep = sol.x > (sol.x(end) - ictime);
+solrestart.x = solrestart.x(keep);
+solrestart.y = solrestart.y(:,keep);
+solrestart.yp = solrestart.yp(:,keep);
 
 
+% SAVING
+% Save stuff here.
 
-
-
-
-
-% loop
-% nrlmass_dde_3
-% X nrlmass_hist
-
-
-
-
+save([outdir filesep mysavename],                                       ...
+    'solrestart','time','soln','node','perturb','t_perturb',            ...
+    'normW','label','strength_perturb','ictime','segments','segment',   ...
+    'outdt','coupling','delays','rstate','myrand', 'perturb_seg');
 
 
 end % END FUNCTION
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
