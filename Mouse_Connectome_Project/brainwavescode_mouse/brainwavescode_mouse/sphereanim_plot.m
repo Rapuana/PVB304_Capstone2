@@ -3,7 +3,7 @@ function sphereanim_plot(yp,vid_pause,cmap)
 % the vid_pause argument is the delay between frames (default 0.02)
 if nargin<3
     cmap='jet';
-    if nargin<3
+    if nargin<2
         vid_pause = 0.02;
     end
 end

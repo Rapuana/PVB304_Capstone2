@@ -106,7 +106,7 @@ ListOfFiles = {File.name};
 prompt = 'Output of variables does not exist, would you like to create one? Y/N';
 
 if any(strcmp(ListOfFiles, loadedfile))
-    in = load([directory, '\', loadedfile])
+    in = load([directory, filesep, loadedfile])
 else
     runcode = input(prompt,'s');
     if runcode == 'Y' || runcode == 'y'
@@ -142,8 +142,6 @@ close all
 t = in.time;
 yp = in.soln';
 %
-
-
 if runimages
 figure
 plot(t,yp)
